@@ -56,13 +56,14 @@ type NetConfig struct {
 	HTTP         WebConfig
 	LDAP         LDAPConfig
 	Database     DatabaseConfig
+	Coordinator  CoordinatorConfig
 	SessionStore SessionStoreConfig
 }
 
 type WebConfig struct {
 	Domain  string
 	Address string
-	TLS     struct {
+	TLS struct {
 		Use         bool
 		PrivateKey  string
 		Certificate string
@@ -71,11 +72,6 @@ type WebConfig struct {
 		Static  string
 		HTML    string
 		Favicon string
-	}
-	ReCaptcha struct {
-		Use        bool
-		PrivateKey string
-		PublicKey  string
 	}
 	Sessions struct {
 		PrivateKey string
@@ -92,6 +88,11 @@ type LDAPConfig struct {
 	Base     string
 	GroupOU  string
 	UserOUs  []string
+}
+
+type CoordinatorConfig struct {
+	Address  string
+	APIToken string
 }
 
 type DatabaseConfig struct {

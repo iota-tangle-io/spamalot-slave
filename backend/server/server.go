@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	"time"
+	"github.com/iota-tangle-io/spamalot-slave/api"
 )
 
 type TemplateRendered struct {
@@ -100,16 +101,19 @@ func (server *Server) Start() {
 	instanceRouter := &routers.InstanceRouter{}
 	rters := []routers.Router{indexRouter, configRouter, instanceRouter}
 
+	// create slave layer
+	cooConfig := configuration.Net.Coordinator
+	slave := api.NewSlave(cooConfig.Address, cooConfig.APIToken)
+
 	// create injection graph for automatic dependency injection
 	g := inject.Graph{}
 
 	// add various objects to the graph
 	if err = g.Provide(
 		&inject.Object{Value: e},
+		&inject.Object{Value: slave},
 		&inject.Object{Value: mongo},
 		&inject.Object{Value: appConfig.Dev, Name: "dev"},
-		&inject.Object{Value: httpConfig.ReCaptcha.PublicKey, Name: "recaptchaPublicKey"},
-		&inject.Object{Value: httpConfig.ReCaptcha.Use, Name: "useRecaptcha"},
 	); err != nil {
 		panic(err)
 	}
@@ -149,6 +153,9 @@ func (server *Server) Start() {
 
 	// boot up server
 	go e.Start(httpConfig.Address)
+
+	// connect to coordinator
+	slave.Connect()
 
 	// finish
 	delta := (time.Now().UnixNano() - start) / 1000000
