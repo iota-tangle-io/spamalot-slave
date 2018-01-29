@@ -155,7 +155,7 @@ func (server *Server) Start() {
 	go e.Start(httpConfig.Address)
 
 	// connect to coordinator
-	slave.Connect()
+	go slave.Connect()
 
 	// finish
 	delta := (time.Now().UnixNano() - start) / 1000000
