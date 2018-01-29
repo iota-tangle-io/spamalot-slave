@@ -13,6 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"crypto/md5"
 	"encoding/hex"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 func NewSlave(cooAddress string, apiToken string) *Slave {
@@ -48,6 +51,14 @@ func (slave *Slave) Connect() {
 	}
 	defer ws.Close()
 	slave.ws = ws
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		<-c
+		slave.ws.WriteJSON(api.SlaveMsg{Type: api.SLAVE_BYE})
+		slave.ws.Close()
+	}()
 
 	slave.logger.Info("greeting coordinator...")
 	helloMsgPayload, err := json.Marshal(api.SlaveHelloMsg{APIToken: slave.APIToken})
