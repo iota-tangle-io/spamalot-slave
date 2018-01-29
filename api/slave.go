@@ -142,7 +142,6 @@ func (slave *Slave) communicate() {
 		case api.SP_START:
 			slave.startSpammer()
 			slave.logger.Info("got spammer start msg")
-			slave.sendSpammerState()
 
 		case api.SP_STOP:
 			slave.logger.Info("got spammer stop msg")
@@ -170,6 +169,9 @@ func (slave *Slave) communicate() {
 		default:
 			slave.logger.Warn("got an unknown msg type from coo", "code", cooMsg.Type)
 		}
+
+		// after each action executed the slave returns its state to the coordinator
+		slave.sendSpammerState()
 	}
 
 }
@@ -193,10 +195,11 @@ func (slave *Slave) sendSpammerState() {
 		slave.sendInternalErrorCode()
 		return
 	}
-	slave.logger.Info("sending spammer state msg to coo")
+	slave.logger.Info("sending state msg to coo...")
 	if err := slave.ws.WriteJSON(msg); err != nil {
 		slave.logger.Warn("unable to send slave state msg", "err", err.Error())
 	}
+	slave.logger.Info("state msg sent to coo")
 }
 
 var ErrSpammerNotInitialised = errors.New("spammer is not initialised")
