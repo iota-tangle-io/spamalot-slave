@@ -1,0 +1,284 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto');
+
+$pastal_red: #FF5A5F;
+$opera_mauve: #C1839F;
+$blue_sapphire: #16638C;
+$very_light_tangelo: #FFB472;
+$white_smoke: #F4F4F4;
+
+$blue_jeans: #5BC0EB;
+$yankees_blue: #153243;
+$dark_slate_gray: #284B63;
+$isabelline: #F4F9E9;
+$portland_orange: #F46036;
+$gunmetal: #283044;
+$spring_bud: #CAEF8B;
+$dark_salmon: #EF8B98;
+$midnight_dark: #323e4a;
+
+body {
+  box-sizing: border-box !important;
+  font-family: 'Roboto', 'Helvetica', sans-serif;
+  font-size: 14px;
+}
+
+.datePickerBox {
+  margin-bottom: 10px;
+}
+
+.datePickerBox > div {
+  display: inline !important;
+  margin-right: 10px;
+}
+
+h1, h2, h3 {
+  font-weight: normal;
+}
+
+.mainContainer {
+  padding: 10px;
+}
+
+.customDateInput {
+  padding: 7px;
+  background: white;
+  outline: none;
+  border: 1px solid black;
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+a {
+  color: black;
+}
+
+.errorCodeChartTooltip {
+  padding: 5px;
+  background: white;
+  color: black;
+}
+
+.container {
+  position: absolute;
+  width: 100%;
+  padding-left: 100px;
+  padding-right: 100px;
+  box-sizing: border-box;
+}
+
+.nav {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  color: $white_smoke;
+  background: $yankees_blue;
+
+  .site_title {
+    position: absolute;
+    height: 60px;
+    line-height: 60px;
+    left: 30px;
+    font-size: 18px;
+  }
+
+  .nav_menu {
+    position: absolute;
+    left: 200px;
+    top: 0px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    li {
+      float: left;
+      text-align: center;
+      width: auto;
+      padding-left: 10px;
+      padding-right: 10px;
+      height: 60px;
+      line-height: 60px;
+      color: $white_smoke;
+
+      &:hover {
+        cursor: pointer;
+        transition: 0.1s;
+        color: $white_smoke;
+        background: lighten($yankees_blue, 20%);
+      }
+    }
+  }
+}
+
+@keyframes onlineAni {
+  0%, 100% {
+    background: #8cea8e;
+  }
+  50% {
+    background: #35f938;
+  }
+}
+
+@keyframes offlineAni {
+  0%, 100% {
+    background: #EC7B81;
+  }
+  50% {
+    background: #e0232d;
+  }
+}
+
+.instances_dashboard {
+
+  .indicator {
+    margin-left: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: white;
+    display: inline-block;
+  }
+
+  .online_indicator {
+    @extend .indicator;
+    animation: onlineAni 2s infinite;
+  }
+
+  .offline_indicator {
+    @extend .indicator;
+    animation: offlineAni 2s infinite;
+  }
+
+  .instance_overview {
+    padding: 20px;
+    width: 40%;
+    margin-bottom: 20px;
+    margin-right: 5%;
+    float: left;
+    color: white;
+    background: $yankees_blue;
+  }
+}
+
+.spammer_running_indicator {
+  color: $spring_bud;
+}
+
+.spammer_stopped_indicator {
+  color: $dark_salmon;
+}
+
+.smallButton {
+  width: auto;
+  height: 40px;
+  line-height: 40px;
+  cursor: pointer;
+  padding-left: 20px;
+  padding-right: 20px;
+  background: white;
+  color: black;
+  border: none;
+  outline: none;
+  text-align: center;
+  float: left;
+  margin-right: 10px;
+
+  &:hover {
+    transition: 0.1s;
+    background: darken(white, 10%);
+    cursor: pointer;
+  }
+}
+
+.instance_controls{
+  .smallButton {
+    background: none;
+    color: white;
+    margin-right: 0px;
+  }
+
+  .smallButton:disabled{
+    background: darken($midnight_dark, 10%);
+    cursor: not-allowed;
+    &:hover {
+      color: white;
+    }
+  }
+}
+
+.stopButton {
+  &:hover {
+    background: $pastal_red;
+    color: white;
+  }
+}
+
+.startButton {
+  &:hover {
+    background: #5BD65B;
+    color: white;
+  }
+}
+
+.restartButton {
+  &:hover {
+    background: #f4b317;
+    color: white;
+  }
+}
+
+.smallButton:disabled {
+  background: darken(white, 20%);
+  cursor: not-allowed;
+  &:hover {
+    color: black;
+  }
+}
+
+.list {
+    li {
+      margin-bottom: 10px;
+    }
+}
+
+.api_token {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding: 5px;
+  background: $yankees_blue;
+  color: white;
+}
+
+.instance_controls {
+  background: $midnight_dark;
+}
+
+.tx_log {
+  padding: 10px;
+  background: $midnight_dark;
+  height: 200px;
+  overflow-y: scroll;
+  .log_entry{
+    color: #27da9f;
+    display: block;
+    margin-bottom: 5px;
+    background:  darken($midnight_dark, 10%);
+    padding: 5px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-bottom-right-radius: 10px;
+  }
+}
+
+.clearfix:after {
+  content: ".";
+  clear: both;
+  display: block;
+  visibility: hidden;
+  height: 0px;
+}
