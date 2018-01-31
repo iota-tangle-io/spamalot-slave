@@ -69,6 +69,7 @@ func (server *Server) Start() {
 	// init web server
 	e := echo.New()
 	server.WebEngine = e
+	server.WebEngine.HideBanner = true
 	if httpConfig.LogRequests {
 		requestLogFile, err := os.Create(fmt.Sprintf("./logs/requests.log"))
 		if err != nil {

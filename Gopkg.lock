@@ -51,18 +51,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/iota-tangle-io/iota-spamalot.go"
-  packages = ["."]
-  revision = "16270383e710985590b6bbc91e9ea163eba8fbc2"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/iota-tangle-io/spamalot-coo"
-  packages = ["api"]
-  revision = "d3da40ba87467fb3f577c91220e695c9a1432717"
-
-[[projects]]
-  branch = "master"
   name = "github.com/jgillich/go-opencl"
   packages = ["cl"]
   revision = "db9961dcc93ff747f6695ae3d18664d0a93c42c6"

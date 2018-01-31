@@ -1,5 +1,0 @@
-.idea/
-node_modules/
-frontend/js/bundle.min.js
-backend/cmd/tmp/
-backend/cmd/logs/

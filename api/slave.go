@@ -274,10 +274,10 @@ func (slave *Slave) configureSpammer(payload []byte) error {
 	}
 
 	slave.logger.Info("spammer configuration from coo:")
-	slave.printSpammerConfig()
 
 	// reset config so newSpammer() will create a spammer with the new config
 	slave.spammerConfig = spammerConfig
+	slave.printSpammerConfig()
 
 	// previous spammer should be stopped
 	spammer, err := slave.newSpammer()
