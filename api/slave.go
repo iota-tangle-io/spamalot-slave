@@ -9,7 +9,7 @@ import (
 	"github.com/iota-tangle-io/iota-spamalot.go"
 	"encoding/json"
 	"fmt"
-	"github.com/cwarner818/giota"
+	"github.com/CWarner818/giota"
 	"github.com/pkg/errors"
 	"crypto/md5"
 	"encoding/hex"
@@ -30,6 +30,11 @@ type Slave struct {
 	ws            *websocket.Conn
 	spammerConfig *api.SpammerConfig
 	spammer       *spamalot.Spammer
+	metrics       chan spamalot.Metric
+
+	// use channels to enfore max one reader and writer throughout the slave
+	wsWrite chan *api.SlaveMsg
+	wsRead  chan *api.CooMsg
 }
 
 func (slave *Slave) Connect() {
@@ -40,6 +45,9 @@ func (slave *Slave) Connect() {
 	}
 
 	slave.logger = logger.New("address", slave.CooAddress)
+	slave.metrics = make(chan spamalot.Metric)
+	slave.wsWrite = make(chan *api.SlaveMsg)
+	slave.wsRead = make(chan *api.CooMsg)
 
 	u := url.URL{Scheme: "ws", Host: slave.CooAddress, Path: "/api"}
 	slave.logger.Info("connecting to coordinator")
@@ -56,7 +64,8 @@ func (slave *Slave) Connect() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		<-c
-		slave.ws.WriteJSON(api.SlaveMsg{Type: api.SLAVE_BYE})
+		// racy
+		slave.wsWrite <- &api.SlaveMsg{Type: api.SLAVE_BYE}
 		slave.ws.Close()
 	}()
 
@@ -67,6 +76,7 @@ func (slave *Slave) Connect() {
 		slave.sendInternalErrorCode()
 		return
 	}
+
 	helloMsg := api.SlaveMsg{Type: api.SLAVE_HELLO, Payload: helloMsgPayload}
 	if err := slave.ws.WriteJSON(helloMsg); err != nil {
 		slave.logger.Warn("unable to send hello msg", "err", err.Error())
@@ -105,9 +115,7 @@ func (slave *Slave) Connect() {
 }
 
 func (slave *Slave) sendInternalErrorCode() {
-	if err := slave.ws.WriteJSON(&api.SlaveMsg{Type: api.SLAVE_INTERNAL_ERROR}); err != nil {
-		slave.logger.Warn("unable to send internal error code to coo")
-	}
+	slave.wsWrite <- &api.SlaveMsg{Type: api.SLAVE_INTERNAL_ERROR}
 }
 
 func (slave *Slave) printSpammerConfig() {
@@ -121,6 +129,50 @@ func (slave *Slave) printSpammerConfig() {
 		return
 	}
 	fmt.Print(string(prettyConfig) + "\n")
+}
+
+func (slave *Slave) receiveMetrics() {
+	for metric := range slave.metrics {
+		// only send summaries for now
+		if metric.Kind != spamalot.SUMMARY && metric.Kind != spamalot.INC_SUCCESSFUL_TX{
+			continue
+		}
+		metricJSON, err := json.Marshal(&metric)
+		if err != nil {
+			slave.logger.Warn("unable to marshal metric")
+			slave.sendInternalErrorCode()
+			return
+		}
+		slaveMsg := &api.SlaveMsg{Type: api.SLAVE_METRIC, Payload: metricJSON}
+		slave.wsWrite <- slaveMsg
+	}
+}
+
+func (slave *Slave) openReceiveChannel() {
+exit:
+	for {
+		cooMsg := &api.CooMsg{}
+		if err := slave.ws.ReadJSON(cooMsg); err != nil {
+			slave.logger.Warn("unable to read coo msg", "err", err.Error())
+			break exit
+		}
+		slave.wsRead <- cooMsg
+	}
+	close(slave.wsRead)
+}
+
+func (slave *Slave) openSendChannel() {
+exit:
+	for {
+		select {
+		case msg := <-slave.wsWrite:
+			if err := slave.ws.WriteJSON(msg); err != nil {
+				slave.logger.Warn("unable to send slave msg", "err", err.Error())
+				break exit
+			}
+			// TODO: add stop signal
+		}
+	}
 }
 
 func (slave *Slave) communicate() {
@@ -138,14 +190,17 @@ func (slave *Slave) communicate() {
 	}
 	slave.spammer = spammer
 
+	go slave.openReceiveChannel()
+	go slave.openSendChannel()
+	go slave.receiveMetrics()
+
 	// send spammer state
 	slave.sendSpammerState()
 
 	for {
-		cooMsg := &api.CooMsg{}
-		if err := slave.ws.ReadJSON(cooMsg); err != nil {
-			slave.logger.Warn("unable to read coordinator msg", "err", err.Error())
-			return
+		cooMsg, ok := <-slave.wsRead
+		if !ok {
+			break
 		}
 
 		// obey to the coordinator
@@ -163,6 +218,7 @@ func (slave *Slave) communicate() {
 			slave.restartSpammer()
 
 		case api.SP_RESET_CONFIG:
+			wasRunning := slave.spammer.IsRunning()
 			if err := slave.stopSpammer(); err != nil {
 				continue
 			}
@@ -171,8 +227,11 @@ func (slave *Slave) communicate() {
 				slave.logger.Warn("couldn't reset configuration")
 				continue
 			}
-			if err := slave.startSpammer(); err != nil {
-				continue
+
+			if wasRunning {
+				if err := slave.startSpammer(); err != nil {
+					continue
+				}
 			}
 		case api.SP_METRICS:
 			slave.logger.Info("got spammer metrics msg")
@@ -195,10 +254,12 @@ func (slave *Slave) sendSpammerState() {
 		slave.sendInternalErrorCode()
 		return
 	}
+
+	// create state message
 	hasher := md5.New()
 	hasher.Write(configBytes)
 	payload.ConfigHash = hex.EncodeToString(hasher.Sum(nil))
-	payload.Running = RUNNING
+	payload.Running = slave.spammer.IsRunning()
 
 	msg, err := api.NewSlaveMsg(api.SLAVE_SPAMMER_STATE, payload)
 	if err != nil {
@@ -206,10 +267,9 @@ func (slave *Slave) sendSpammerState() {
 		slave.sendInternalErrorCode()
 		return
 	}
+
 	slave.logger.Info("sending state msg to coo...")
-	if err := slave.ws.WriteJSON(msg); err != nil {
-		slave.logger.Warn("unable to send slave state msg", "err", err.Error())
-	}
+	slave.wsWrite <- msg
 	slave.logger.Info("state msg sent to coo")
 }
 
@@ -230,23 +290,21 @@ func (slave *Slave) restartSpammer() error {
 	return nil
 }
 
-// TODO: remove after spammer supplies running state
-var RUNNING = false
-
 func (slave *Slave) stopSpammer() error {
 	if slave.spammer == nil {
 		slave.printSlaveNotInitMsg()
 		return ErrSpammerNotInitialised
 	}
 
-	// TODO: check whether spammer is already stopped
+	if !slave.spammer.IsRunning() {
+		return nil
+	}
 
 	slave.logger.Info("halting spammer...")
 	if err := slave.spammer.Stop(); err != nil {
 		slave.logger.Warn("couldn't stop spammer", "err", err.Error())
 		return err
 	}
-	RUNNING = false
 	slave.logger.Info("spammer stopped")
 	return nil
 }
@@ -257,12 +315,13 @@ func (slave *Slave) startSpammer() error {
 		return ErrSpammerNotInitialised
 	}
 
-	// TODO: check whether spammer is already started
+	if slave.spammer.IsRunning() {
+		return nil
+	}
 
 	slave.logger.Info("starting spammer...")
-	//slave.spammer.Start() // don't actually do it for now
+	go slave.spammer.Start() // don't actually do it for now
 	slave.logger.Info("spammer started")
-	RUNNING = true
 	return nil
 }
 
@@ -296,8 +355,11 @@ func (slave *Slave) newSpammer() (*spamalot.Spammer, error) {
 		spamalot.ToAddress(config.DestAddress),
 		spamalot.WithTag(config.Tag),
 		spamalot.WithMessage(config.Message),
+		spamalot.WithSecurityLevel(spamalot.SecurityLevel(config.SecurityLvl)),
 		spamalot.FilterTrunk(config.FilterTrunk),
 		spamalot.FilterBranch(config.FilterTrunk),
+		spamalot.FilterMilestone(config.FilterMilestone),
+		spamalot.WithMetricsRelay(slave.metrics),
 	)
 	if err != nil {
 		return nil, err
