@@ -5,25 +5,21 @@ import {ApplicationStore} from "../stores/AppStore";
 import DevTools from 'mobx-react-devtools';
 import {Route, Switch} from 'react-router-dom';
 import {NotFound} from "./NotFound";
-import {ConfigStore} from "../stores/ConfigStore";
-import {Configuration} from "./Configuration";
-import {InstancesDashboard} from "./instances/InstancesDashboard";
 import {Nav} from './Nav';
+import {Dashboard} from "./Dashboard";
 
 declare var __DEVELOPMENT__;
 
 interface Props {
     appStore: ApplicationStore;
-    configStore: ConfigStore;
 }
 
 @withRouter
-@inject("configStore")
 @inject("appStore")
 @observer
 export class App extends React.Component<Props, {}> {
     componentWillMount() {
-        this.props.configStore.fetchConfig();
+
     }
 
     render() {
@@ -32,9 +28,7 @@ export class App extends React.Component<Props, {}> {
                 <Nav></Nav>
                 <div className={"container"}>
                     <Switch>
-                        <Route exact path={"/"} component={InstancesDashboard}/>
-                        <Route exact path={"/instances"} component={InstancesDashboard}/>
-                        <Route path={"/config"} component={Configuration}/>
+                        <Route exact path={"/"} component={Dashboard}/>
                         <Route component={NotFound}/>
                     </Switch>
                 </div>

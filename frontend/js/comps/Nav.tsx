@@ -9,15 +9,7 @@ export class Nav extends React.Component<Props, {}> {
     render() {
         return (
             <div className={'nav'}>
-                <div className={'site_title'}>spamalot-slave</div>
-                <ul className={'nav_menu'}>
-                    <Link to={'/instances'}>
-                        <li>Instances</li>
-                    </Link>
-                    <Link to={'/configuration'}>
-                        <li>Configuration</li>
-                    </Link>
-                </ul>
+                <div className={'site_title'}>Distributed Load Generator</div>
             </div>
         );
     }

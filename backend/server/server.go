@@ -15,6 +15,7 @@ import (
 	"os"
 	"time"
 	"github.com/iota-tangle-io/spamalot-slave/api"
+	"context"
 )
 
 type TemplateRendered struct {
@@ -48,24 +49,6 @@ func (server *Server) Start() {
 	}
 	logger.Info("booting up app...")
 
-	// connect to mongo
-	mongo := &mgo.Session{}
-	var mongoConnErr error
-	mongoConfig := server.Config.Net.Database.Mongo
-	if mongoConfig.Use {
-		mongo, mongoConnErr = connectMongoDB(server.Config.Net.Database.Mongo)
-		if mongoConnErr != nil {
-			panic(mongoConnErr)
-		}
-		if err = mongo.Ping(); err != nil {
-			panic(err)
-		}
-		server.Mongo = mongo
-		logger.Info("connection to MongoDB established")
-	} else {
-		logger.Info("MongoDB connection disabled")
-	}
-
 	// init web server
 	e := echo.New()
 	server.WebEngine = e
@@ -90,17 +73,15 @@ func (server *Server) Start() {
 
 	// create controllers
 	appCtrl := &controllers.AppCtrl{}
-	configCtrl := &controllers.ConfigCtrl{}
-	instanceCtrl := &controllers.InstanceCtrl{}
+	spammerCtrl := &controllers.SpammerCtrl{}
 	controllers := []controllers.Controller{
-		appCtrl, configCtrl, instanceCtrl,
+		appCtrl, spammerCtrl,
 	}
 
 	// create routers
 	indexRouter := &routers.IndexRouter{}
-	configRouter := &routers.ConfigRouter{}
-	instanceRouter := &routers.InstanceRouter{}
-	rters := []routers.Router{indexRouter, configRouter, instanceRouter}
+	spammRouter := &routers.SpammerRouter{}
+	rters := []routers.Router{indexRouter, spammRouter}
 
 	// create slave layer
 	cooConfig := configuration.Net.Coordinator
@@ -113,7 +94,6 @@ func (server *Server) Start() {
 	if err = g.Provide(
 		&inject.Object{Value: e},
 		&inject.Object{Value: slave},
-		&inject.Object{Value: mongo},
 		&inject.Object{Value: appConfig.Dev, Name: "dev"},
 	); err != nil {
 		panic(err)
@@ -156,7 +136,7 @@ func (server *Server) Start() {
 	go e.Start(httpConfig.Address)
 
 	// connect to coordinator
-	go slave.Connect()
+	//go slave.Connect()
 
 	// finish
 	delta := (time.Now().UnixNano() - start) / 1000000
@@ -167,30 +147,6 @@ func (server *Server) Start() {
 func (server *Server) Shutdown(timeout time.Duration) {
 	select {
 	case <-time.After(timeout):
+		server.WebEngine.Shutdown(context.Background())
 	}
-}
-
-func connectMongoDB(config MongoDBConfig) (*mgo.Session, error) {
-	var session *mgo.Session
-	var err error
-	if config.Auth {
-		cred := &mgo.Credential{
-			Username:  config.Username,
-			Password:  config.Password,
-			Mechanism: config.Mechanism,
-			Source:    config.Source,
-		}
-		session, err = mgo.Dial(config.Address)
-		if err = session.Login(cred); err != nil {
-			return nil, err
-		}
-	} else {
-		session, err = mgo.Dial(config.Address)
-	}
-	if err != nil {
-		panic(err)
-	}
-	session.SetMode(mgo.Monotonic, true)
-	session.SetSafe(&mgo.Safe{})
-	return session, nil
 }

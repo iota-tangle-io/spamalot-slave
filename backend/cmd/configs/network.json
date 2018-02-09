@@ -1,12 +1,7 @@
 {
   "http": {
-    "domain": "example.com",
+    "domain": "localhost",
     "address": "0.0.0.0:9090",
-    "tls": {
-      "use": false,
-      "privateKey": "private.key",
-      "certificate": "cert.crt"
-    },
     "assets": {
       "static": "../../frontend",
       "favicon": "../../frontend/img/favicon.ico",
@@ -20,21 +15,5 @@
   "coordinator": {
     "address": "127.0.0.1:16265",
     "apiToken": "JbvhNvGgBKcNpRWyigpSRJgvIvFQIrdq"
-  },
-  "database": {
-    "mongo": {
-      "use": true,
-      "address": "mongodb://127.0.0.1:27017/spamalot-slave",
-      "auth": false,
-      "username": "",
-      "password": "",
-      "mechanism": "SCRAM-SHA-1",
-      "source": "admin"
-    }
-  },
-  "sessionStore": {
-    "redis": {
-      "address": "127.0.0.1:6379"
-    }
   }
 }

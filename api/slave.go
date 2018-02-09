@@ -134,7 +134,7 @@ func (slave *Slave) printSpammerConfig() {
 func (slave *Slave) receiveMetrics() {
 	for metric := range slave.metrics {
 		// only send summaries for now
-		if metric.Kind != spamalot.SUMMARY && metric.Kind != spamalot.INC_SUCCESSFUL_TX{
+		if metric.Kind != spamalot.SUMMARY && metric.Kind != spamalot.INC_SUCCESSFUL_TX {
 			continue
 		}
 		metricJSON, err := json.Marshal(&metric)

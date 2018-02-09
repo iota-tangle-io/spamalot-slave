@@ -54,20 +54,12 @@ type AppConfig struct {
 type NetConfig struct {
 	Location     interface{} `loc:"./configs/network.json"`
 	HTTP         WebConfig
-	LDAP         LDAPConfig
-	Database     DatabaseConfig
 	Coordinator  CoordinatorConfig
-	SessionStore SessionStoreConfig
 }
 
 type WebConfig struct {
 	Domain  string
 	Address string
-	TLS struct {
-		Use         bool
-		PrivateKey  string
-		Certificate string
-	}
 	Assets struct {
 		Static  string
 		HTML    string
@@ -79,40 +71,7 @@ type WebConfig struct {
 	LogRequests bool
 }
 
-type LDAPConfig struct {
-	Address  string
-	Port     int
-	User     string
-	Password string
-	Domain   string
-	Base     string
-	GroupOU  string
-	UserOUs  []string
-}
-
 type CoordinatorConfig struct {
 	Address  string
 	APIToken string
-}
-
-type DatabaseConfig struct {
-	Mongo MongoDBConfig
-}
-
-type MongoDBConfig struct {
-	Use       bool
-	Address   string
-	Auth      bool
-	Username  string
-	Password  string
-	Mechanism string
-	Source    string
-}
-
-type SessionStoreConfig struct {
-	Redis RedisConfig
-}
-
-type RedisConfig struct {
-	Address string
 }
